@@ -20,18 +20,35 @@ val ipv4_address : ipv4_address typ
 (*
  * Channels
  *)
-(* Channel receives values of type 'o and sends values of type 'o *)
+(* Channel receives values of type 'o and sends values of type 'i *)
 type ('i, 'o) channel
+
 type channel_inverted = bool
+
+type void (* Empty type *)
+
+type (_, _) chan_type =
+  | Io : 'i * 'o -> ('i, 'o) chan_type
 
 (*
  * Function definitions
  *)
-(* Note: since currying is not available (functions are not first-class), multiple
- * arguments should be encoded as tuples. *)
+(* Note: since currying is not available (functions are not first-class),
+ * multiple arguments should be encoded as tuples. *)
 type ('dom, 'ret) fn
 val fn : 'dom typ -> 'ret typ ->
   ('dom expression -> 'ret expression) -> ('dom, 'ret) fn
+
+(*
+ * Processes
+ *)
+(*
+type _ chan_types =
+  | Nil : unit chan_types
+  | Cons : 'a * 'b chan_types -> ('a * 'b) chan_types
+
+type 'chans process
+*)
 
 (*
  * Expressions
@@ -78,7 +95,11 @@ val apply : ('dom, 'ret) fn -> 'dom expression -> 'ret expression
 val integer_range : int expression -> int expression
   -> int list expression
 (*val map : ?*)
-(*val iterate : ?*)
+val iterate :
+  'a list expression (* List *)
+  -> 'b (* Initial value *)
+  -> ('b expression -> 'a expression -> 'b expression) (* Loop body *)
+  -> 'b expression
 val (!) : channel_inverted -> (_, 'a) channel -> 'a expression -> unit expression
 val (?.) : channel_inverted -> ('a, _) channel -> 'a expression
 val peek : channel_inverted -> _ channel -> unit expression

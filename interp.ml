@@ -24,7 +24,13 @@ let ipv4_address = IPv4Address
  * Channels.
  *)
 type ('i, 'o) channel = 'i (* FIXME implement real channels. *)
+
 type channel_inverted = bool
+
+type void (* Empty type *)
+
+type (_, _) chan_type =
+  | Io : 'i * 'o -> ('i, 'o) chan_type
 
 (*
  * Function definitions.
@@ -37,39 +43,86 @@ let fn _ _ f = f
  * Expressions.
  *)
 let true_ = true
+
 let false_ = false
+
 let (&&) = (&&)
+
 let (||) = (||)
+
 let not b = not b
+
 let (=) = (=)
+
 let (>=) = (>=)
+
 let (<=) = (<=)
+
 let mkint i = i
+
 let (+) = (+)
+
 let (-) = (-)
+
 let ( * ) = ( * )
+
 let mod_ a b = a mod b
+
 let (/) = (/)
+
 let abs = Pervasives.abs
+
 let mk_ipv4_address addr = addr
+
 let int_to_address i =
   (i land 0xff000000, i land 0xff0000, i land 0xff00, i land 0xff)
+
 let address_to_int (a, b, c, d) =
   (a lsl 24) lor (b lsl 16) lor (c lsl 8) lor d
+
 let empty = []
+
 let (^::) x xs = x :: xs
+
 let (@) = (@)
+
 let pair x y = x, y
+
 let (:=) r x = r := x
+
 let fst x = fst x
+
 let snd x = snd x
+
 let apply f x = f x
+
 let rec integer_range lb ub =
   if ub <= lb then []
   else
     let new_ub = pred ub in
     new_ub :: integer_range lb new_ub
+
+let rec iterate l x f =
+  match l with
+  | [] -> x
+  | y :: ys ->
+      let x' = iterate ys x f in
+      f x' y
+
 let (!) _inverted _chan _x = ()
+
 let (?.) _inverted chan = chan
+
 let peek _inverted _chan = ()
+
 let mkstr s = s
+
+(* Test. *)
+let factorial =
+  fn int int (fun n ->
+    iterate (integer_range 1 (n+1)) 1
+      (fun acc x ->
+        x * acc))
+
+let () = Printf.printf "%d\n"
+  (apply factorial (mkint 8))
