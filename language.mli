@@ -14,6 +14,7 @@ val ( ** ) : 'a typ -> 'b typ -> ('a * 'b) typ
 val string : string typ
 val int : int typ
 val bool : bool typ
+val void : unit typ
 (* record_type: not supported yet *)
 val ipv4_address : ipv4_address typ
 
@@ -28,7 +29,11 @@ type channel_inverted = bool
 type void (* Empty type *)
 
 type (_, _) chan_type =
-  | Io : 'i * 'o -> ('i, 'o) chan_type
+  | Io : 'i typ * 'o typ -> ('i, 'o) chan_type
+
+val channel : ('i, 'o) chan_type -> ('i, 'o) channel
+(* Can read from channel? *)
+val can : (_, _) channel -> bool expression
 
 (*
  * Function definitions
@@ -100,10 +105,12 @@ val iterate :
   -> 'b (* Initial value *)
   -> ('b expression -> 'a expression -> 'b expression) (* Loop body *)
   -> 'b expression
-val (!) : channel_inverted -> (_, 'a) channel -> 'a expression -> unit expression
-val (?.) : channel_inverted -> ('a, _) channel -> 'a expression
-val peek : channel_inverted -> _ channel -> unit expression
+val (<~) : (_, 'a) channel -> 'a expression -> unit expression
+val (?.) : ('a, _) channel -> 'a expression
+val (??) : ('a, _) channel -> 'a expression (* Peeking *)
 val mkstr : string -> string expression
 (*val meta_quoted : ?*)
 (*val hole : ?*)
 (*val literal_expr : ?*)
+
+val eval : 'a expression -> 'a

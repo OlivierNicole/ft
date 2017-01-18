@@ -9,12 +9,14 @@ type ipv4_address = int * int * int * int
  * Types.
  *)
 type _ typ =
+  | Void : unit typ
   | Product : 'a typ * 'b typ -> ('a * 'b) typ
   | IPv4Address : (int * int * int * int) typ
   | Int : int typ
   | String : string typ
   | Bool : bool typ
 let ( ** ) x y = Product (x, y)
+let void = Void
 let int = Int
 let string = String
 let bool = Bool
@@ -23,14 +25,21 @@ let ipv4_address = IPv4Address
 (*
  * Channels.
  *)
-type ('i, 'o) channel = 'i (* FIXME implement real channels. *)
+type ('i, 'o) channel = 'i option ref * 'o option ref
+  (* 1-capacity channel. *)
+  (* FIXME implement real channels. *)
 
 type channel_inverted = bool
 
 type void (* Empty type *)
 
 type (_, _) chan_type =
-  | Io : 'i * 'o -> ('i, 'o) chan_type
+  | Io : 'i typ * 'o typ -> ('i, 'o) chan_type
+
+let channel _ = (ref None, ref None)
+
+(* Can read on channel? *)
+let can chan = !(fst chan) <> None
 
 (*
  * Function definitions.
@@ -109,20 +118,18 @@ let rec iterate l x f =
       let x' = iterate ys x f in
       f x' y
 
-let (!) _inverted _chan _x = ()
+let (<~) chan x =
+  snd chan := Some x
 
-let (?.) _inverted chan = chan
+let (??) chan =
+  match !(fst chan) with
+  | None -> failwith "No data in channel."
+  | Some x -> x
 
-let peek _inverted _chan = ()
+let (?.) chan =
+  let x = ?? chan in
+  fst chan := None; x
 
 let mkstr s = s
 
-(* Test. *)
-let factorial =
-  fn int int (fun n ->
-    iterate (integer_range 1 (n+1)) 1
-      (fun acc x ->
-        x * acc))
-
-let () = Printf.printf "%d\n"
-  (apply factorial (mkint 8))
+let eval x = x
