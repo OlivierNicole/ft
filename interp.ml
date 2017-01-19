@@ -25,9 +25,8 @@ let ipv4_address = IPv4Address
 (*
  * Channels.
  *)
-type ('i, 'o) channel = 'i option ref * 'o option ref
-  (* 1-capacity channel. *)
-  (* FIXME implement real channels. *)
+type ('i, 'o) channel = 'i list ref * 'o list ref
+  (* FIXME implement better channels. *)
 
 type channel_inverted = bool
 
@@ -36,10 +35,16 @@ type void (* Empty type *)
 type (_, _) chan_type =
   | Io : 'i typ * 'o typ -> ('i, 'o) chan_type
 
-let channel _ = (ref None, ref None)
+let channel _ = (ref [], ref [])
 
 (* Can read on channel? *)
-let can chan = !(fst chan) <> None
+let can chan = !(fst chan) <> []
+
+let put_incoming chan x =
+  fst chan := !(fst chan) @ [x]
+
+let put_outgoing chan x =
+  snd chan := !(snd chan) @ [x]
 
 (*
  * Function definitions.
@@ -119,16 +124,17 @@ let rec iterate l x f =
       f x' y
 
 let (<~) chan x =
-  snd chan := Some x
+  put_outgoing chan x
 
 let (??) chan =
   match !(fst chan) with
-  | None -> failwith "No data in channel."
-  | Some x -> x
+  | [] -> failwith "No data in channel."
+  | x :: _ -> x
 
 let (?.) chan =
-  let x = ?? chan in
-  fst chan := None; x
+  match !(fst chan) with
+  | [] -> failwith "No data in channel."
+  | x :: xs -> fst chan := xs; x
 
 let mkstr s = s
 

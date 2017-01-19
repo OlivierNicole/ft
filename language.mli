@@ -34,6 +34,8 @@ type (_, _) chan_type =
 val channel : ('i, 'o) chan_type -> ('i, 'o) channel
 (* Can read from channel? *)
 val can : (_, _) channel -> bool expression
+val put_incoming : ('a, _) channel -> 'a expression -> unit
+val put_outgoing : (_, 'a) channel -> 'a expression -> unit
 
 (*
  * Function definitions
