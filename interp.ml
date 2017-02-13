@@ -1,4 +1,13 @@
-type 'a expression = 'a
+type 'a expression = 'a Lazy.t
+
+let pure = Lazy.from_val
+let force = Lazy.force
+let map : ('a -> 'b) -> 'a Lazy.t -> 'b Lazy.t =
+  fun f x ->
+    lazy (f (force x))
+let lift2 : ('a -> 'b -> 'c) -> 'a Lazy.t -> 'b Lazy.t -> 'c Lazy.t =
+  fun f x y ->
+    lazy (f (force x) (force y))
 
 (*
  * Underlying OCaml types
@@ -37,8 +46,141 @@ type (_, _) chan_type =
 
 let channel _ = (ref [], ref [])
 
+(*
+ * Function definitions.
+ *)
+type ('dom, 'ret) fn = 'dom expression -> 'ret expression
+
+let fn (_ : 'dom typ) (_ : 'ret typ)
+    (f : 'dom expression -> 'ret expression) =
+  f
+
+(*
+ * Expressions.
+ *)
+let true_ = pure true
+
+let false_ = pure false
+
+let (&&) x y =
+  lazy
+    (if force x then force y else false)
+
+let (||) x y =
+  lazy
+    (if force x then true else force y)
+
+let not = map not
+
+let (=) a b =
+  lift2 (=) a b
+
+let (<>) a b =
+  lift2 (<>) a b
+
+let (>=) a b =
+  lift2 (>=) a b
+
+let (<=) a b =
+  lift2 (<=) a b
+
+let mkint i =
+  Lazy.from_val i
+
+let (+) x y =
+  lift2 (+) x y
+
+let (-) x y =
+  lift2 (-) x y
+
+let ( * ) x y =
+  lift2 ( * ) x y
+
+let mod_ a b =
+  lift2 (mod) a b
+
+let (/) x y =
+  lift2 (/) x y
+
+let abs x = map Pervasives.abs x
+
+let mk_ipv4_address addr = addr
+
+let int_to_address i =
+  map (fun i ->
+    (i land 0xff000000, i land 0xff0000, i land 0xff00, i land 0xff))
+    i
+
+let address_to_int a =
+  map (fun (a, b, c, d) ->
+    (a lsl 24) lor (b lsl 16) lor (c lsl 8) lor d)
+    a
+
+let empty =
+  Lazy.from_val []
+
+let (^::) (x : 'a expression) (xs : 'a list expression) : 'a list expression =
+  lift2 (fun x xs -> x :: xs) x xs
+
+let (@) l l' = lift2 (@) l l'
+
+let pair x y = lift2 (fun x y -> x, y)
+
+let ref (x : 'a expression) : 'a ref expression =
+  lazy (Pervasives.ref (force x))
+
+let (:=) r x = lift2 (:=) r x
+
+let (!) r = map (!) r
+
+let fst x = map fst x
+
+let snd x = map snd x
+
+let apply (f : ('dom, 'ret) fn) (x : 'dom expression) =
+  f x
+
+let seq (x : unit expression) (y : 'a expression) =
+  lazy (
+    force x;
+    force y)
+
+let if_ (cond : bool expression) (ift : 'a expression) (iff : 'a expression)
+    : 'a expression =
+  lazy (
+    if force cond then force ift else force iff)
+
+let rec integer_range (lb : int expression) (ub : int expression)
+    : int list expression =
+  if_ (ub <= lb)
+    empty
+    (let new_ub = map pred ub in
+      new_ub ^:: integer_range lb new_ub)
+
+let rec iterate l x f =
+  match (force l) with
+  | [] -> x
+  | y :: ys ->
+      let x' = iterate (pure ys) x f in
+      f x' y
+
+let (??) chan =
+  match (force !(fst chan)) with
+  | [] -> failwith "No data in channel."
+  | x :: _ -> x
+
+let (?.) chan =
+  match force !(fst chan) with
+  | [] -> failwith "No data in channel."
+  | x :: xs -> seq (fst chan := pure xs) (pure x)
+
+let mkstr (s : string) = Lazy.from_val s
+
+let eval x = force x
+
 (* Can read on channel? *)
-let can chan = !(fst chan) <> []
+let can (chan : ('i, 'o) channel) : bool expression =
+  !(fst chan) <> []
 
 let put_incoming chan x =
   fst chan := !(fst chan) @ [x]
@@ -46,96 +188,5 @@ let put_incoming chan x =
 let put_outgoing chan x =
   snd chan := !(snd chan) @ [x]
 
-(*
- * Function definitions.
- *)
-type ('dom, 'ret) fn = 'dom expression -> 'ret expression
-
-let fn _ _ f = f
-
-(*
- * Expressions.
- *)
-let true_ = true
-
-let false_ = false
-
-let (&&) = (&&)
-
-let (||) = (||)
-
-let not b = not b
-
-let (=) = (=)
-
-let (>=) = (>=)
-
-let (<=) = (<=)
-
-let mkint i = i
-
-let (+) = (+)
-
-let (-) = (-)
-
-let ( * ) = ( * )
-
-let mod_ a b = a mod b
-
-let (/) = (/)
-
-let abs = Pervasives.abs
-
-let mk_ipv4_address addr = addr
-
-let int_to_address i =
-  (i land 0xff000000, i land 0xff0000, i land 0xff00, i land 0xff)
-
-let address_to_int (a, b, c, d) =
-  (a lsl 24) lor (b lsl 16) lor (c lsl 8) lor d
-
-let empty = []
-
-let (^::) x xs = x :: xs
-
-let (@) = (@)
-
-let pair x y = x, y
-
-let (:=) r x = r := x
-
-let fst x = fst x
-
-let snd x = snd x
-
-let apply f x = f x
-
-let rec integer_range lb ub =
-  if ub <= lb then []
-  else
-    let new_ub = pred ub in
-    new_ub :: integer_range lb new_ub
-
-let rec iterate l x f =
-  match l with
-  | [] -> x
-  | y :: ys ->
-      let x' = iterate ys x f in
-      f x' y
-
 let (<~) chan x =
   put_outgoing chan x
-
-let (??) chan =
-  match !(fst chan) with
-  | [] -> failwith "No data in channel."
-  | x :: _ -> x
-
-let (?.) chan =
-  match !(fst chan) with
-  | [] -> failwith "No data in channel."
-  | x :: xs -> fst chan := xs; x
-
-let mkstr s = s
-
-let eval x = x
