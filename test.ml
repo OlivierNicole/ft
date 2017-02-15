@@ -7,7 +7,7 @@ let program =
   put_incoming somechan (mkint 2);
   let factorial =
     fn int int (fun n ->
-      iterate (integer_range (mkint 1) (n+mkint 1)) 1
+      iterate (integer_range (mkint 1) (n+mkint 1)) (mkint 1)
         (fun acc x ->
           x * acc))
   in

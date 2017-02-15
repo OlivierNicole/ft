@@ -124,7 +124,7 @@ let (^::) (x : 'a expression) (xs : 'a list expression) : 'a list expression =
 
 let (@) l l' = lift2 (@) l l'
 
-let pair x y = lift2 (fun x y -> x, y)
+let pair x y = lift2 (fun x y -> x, y) x y
 
 let ref (x : 'a expression) : 'a ref expression =
   lazy (Pervasives.ref (force x))
@@ -152,27 +152,32 @@ let if_ (cond : bool expression) (ift : 'a expression) (iff : 'a expression)
 
 let rec integer_range (lb : int expression) (ub : int expression)
     : int list expression =
-  if_ (ub <= lb)
-    empty
-    (let new_ub = map pred ub in
-      new_ub ^:: integer_range lb new_ub)
+  lazy (
+    let open Pervasives in
+    let ub = force ub in
+    if ub <= force lb then []
+    else
+      let new_ub = pred ub in
+      let xs = integer_range lb (mkint new_ub) in
+      new_ub :: force xs
+  )
 
-let rec iterate l x f =
+let rec iterate (l : 'a list expression) (x : 'b expression) f =
   match (force l) with
   | [] -> x
   | y :: ys ->
       let x' = iterate (pure ys) x f in
-      f x' y
+      f x' (pure y)
 
-let (??) chan =
-  match (force !(fst chan)) with
+let (??) (chan : ('i, 'o) channel) : 'i expression =
+  match (Pervasives.fst chan).contents with
   | [] -> failwith "No data in channel."
-  | x :: _ -> x
+  | x :: _ -> pure x
 
-let (?.) chan =
-  match force !(fst chan) with
+let (?.) (chan : ('i, 'o) channel) : 'i expression =
+  match (Pervasives.fst chan).contents with
   | [] -> failwith "No data in channel."
-  | x :: xs -> seq (fst chan := pure xs) (pure x)
+  | x :: xs -> seq (pure (Pervasives.(:=) (Pervasives.fst chan) xs)) (pure x)
 
 let mkstr (s : string) = Lazy.from_val s
 
@@ -180,13 +185,17 @@ let eval x = force x
 
 (* Can read on channel? *)
 let can (chan : ('i, 'o) channel) : bool expression =
-  !(fst chan) <> []
+  match Pervasives.(!) (Pervasives.fst chan) with
+  | [] -> pure false
+  | _ -> pure true
 
 let put_incoming chan x =
-  fst chan := !(fst chan) @ [x]
+  let open Pervasives in
+  fst chan := !(fst chan) @ [force x]
 
 let put_outgoing chan x =
-  snd chan := !(snd chan) @ [x]
+  let open Pervasives in
+  snd chan := !(snd chan) @ [force x]
 
 let (<~) chan x =
-  put_outgoing chan x
+  lazy (put_outgoing chan x)

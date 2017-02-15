@@ -87,8 +87,8 @@ val (@) : 'a list expression -> 'a list expression
 val pair : 'a expression -> 'b expression -> ('a * 'b) expression
 (* Seq and if-then-else: cannot be implemented as a function because of strict
  * evaluation. *)
-(*val seq : 'a expression -> 'b expression -> 'b expression*)
-(*val ite : bool expression -> 'a expression -> 'a expression option*)
+val seq : unit expression -> 'b expression -> 'b expression
+val if_ : bool expression -> 'a expression -> 'a expression -> 'a expression
 (*val par : ?*)
 (* if-then-else *)
 val (:=) : 'a ref expression -> 'a expression -> unit expression
@@ -104,7 +104,7 @@ val integer_range : int expression -> int expression
 (*val map : ?*)
 val iterate :
   'a list expression (* List *)
-  -> 'b (* Initial value *)
+  -> 'b expression (* Initial value *)
   -> ('b expression -> 'a expression -> 'b expression) (* Loop body *)
   -> 'b expression
 val (<~) : (_, 'a) channel -> 'a expression -> unit expression
