@@ -1,8 +1,8 @@
-module Test = functor (Backend : Language.Semantics) -> struct
+module Test(Backend : Language.Semantics) = struct
 
   open Backend
 
-  let program =
+  macro program () =
     let y = mkint 13 in
     let somechan = channel (Io (int, void)) in
     put_incoming somechan (mkint 4);
@@ -20,4 +20,5 @@ end
 
 module Program = Test(Interp)
 
-let () = Printf.printf "%d\n" @@ Interp.eval Program.program
+let () = Printf.printf "%d\n" @@ $(Expr.of_int
+  (Interp.eval (Program.program ())))

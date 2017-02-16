@@ -1,4 +1,6 @@
 module type Semantics = sig
+  
+  open ~Pervasives
 
   type 'a expression
 
@@ -12,13 +14,13 @@ module type Semantics = sig
    *)
   (* Analogous of the "type_value" variant. *)
   type _ typ
-  val ( ** ) : 'a typ -> 'b typ -> ('a * 'b) typ
-  val string : string typ
-  val int : int typ
-  val bool : bool typ
-  val void : unit typ
+  macro ( ** ) : 'a typ -> 'b typ -> ('a * 'b) typ
+  macro string : string typ
+  macro int : int typ
+  macro bool : bool typ
+  macro void : unit typ
   (* record_type: not supported yet *)
-  val ipv4_address : ipv4_address typ
+  macro ipv4_address : ipv4_address typ
 
   (*
    * Channels
@@ -33,11 +35,11 @@ module type Semantics = sig
   type (_, _) chan_type =
     | Io : 'i typ * 'o typ -> ('i, 'o) chan_type
 
-  val channel : ('i, 'o) chan_type -> ('i, 'o) channel
+  macro channel : ('i, 'o) chan_type -> ('i, 'o) channel
   (* Can read from channel? *)
-  val can : (_, _) channel -> bool expression
-  val put_incoming : ('a, _) channel -> 'a expression -> unit
-  val put_outgoing : (_, 'a) channel -> 'a expression -> unit
+  macro can : (_, _) channel -> bool expression
+  macro put_incoming : ('a, _) channel -> 'a expression -> unit
+  macro put_outgoing : (_, 'a) channel -> 'a expression -> unit
 
   (*
    * Function definitions
@@ -45,7 +47,7 @@ module type Semantics = sig
   (* Note: since currying is not available (functions are not first-class),
    * multiple arguments should be encoded as tuples. *)
   type ('dom, 'ret) fn
-  val fn : 'dom typ -> 'ret typ ->
+  macro fn : 'dom typ -> 'ret typ ->
     ('dom expression -> 'ret expression) -> ('dom, 'ret) fn
 
   (*
@@ -62,60 +64,59 @@ module type Semantics = sig
   (*
    * Expressions
    *)
-  val true_ : bool expression
-  val false_ : bool expression
-  val (&&) : bool expression -> bool expression -> bool expression
-  val (||) : bool expression -> bool expression -> bool expression
-  val not : bool expression -> bool expression
-  val (=) : 'a expression -> 'a expression -> bool expression
-  val (>=) : 'a expression -> 'a expression -> bool expression
-  val (<=) : 'a expression -> 'a expression -> bool expression
-  val mkint : int -> int expression
-  val (+) : int expression -> int expression -> int expression
-  val (-) : int expression -> int expression -> int expression
-  val ( * ) : int expression -> int expression -> int expression
-  val mod_ : int expression -> int expression -> int expression
-  val (/) : int expression -> int expression -> int expression
-  val abs : int expression -> int expression
-  val mk_ipv4_address : (int * int * int * int) expression
+  macro mkbool : bool -> bool expression
+  macro (&&) : bool expression -> bool expression -> bool expression
+  macro (||) : bool expression -> bool expression -> bool expression
+  macro not : bool expression -> bool expression
+  macro (=) : 'a expression -> 'a expression -> bool expression
+  macro (>=) : 'a expression -> 'a expression -> bool expression
+  macro (<=) : 'a expression -> 'a expression -> bool expression
+  macro mkint : int -> int expression
+  macro (+) : int expression -> int expression -> int expression
+  macro (-) : int expression -> int expression -> int expression
+  macro ( * ) : int expression -> int expression -> int expression
+  macro mod_ : int expression -> int expression -> int expression
+  macro (/) : int expression -> int expression -> int expression
+  macro abs : int expression -> int expression
+  macro mk_ipv4_address : (int * int * int * int) expression
     -> ipv4_address expression
-  val int_to_address : int expression -> ipv4_address expression
-  val address_to_int : ipv4_address expression -> int expression
-  val empty : 'a list expression
-  val (^::) : 'a expression -> 'a list expression -> 'a list expression
-  val (@) : 'a list expression -> 'a list expression
+  macro int_to_address : int expression -> ipv4_address expression
+  macro address_to_int : ipv4_address expression -> int expression
+  macro empty : unit -> 'a list expression
+  macro (^::) : 'a expression -> 'a list expression -> 'a list expression
+  macro (@) : 'a list expression -> 'a list expression
     -> 'a list expression
   (* TupleValue will have to be simulated using nested pairs. *)
-  val pair : 'a expression -> 'b expression -> ('a * 'b) expression
+  macro pair : 'a expression -> 'b expression -> ('a * 'b) expression
   (* Seq and if-then-else: cannot be implemented as a function because of strict
    * evaluation. *)
-  val seq : unit expression -> 'b expression -> 'b expression
-  val if_ : bool expression -> 'a expression -> 'a expression -> 'a expression
+  macro seq : unit expression -> 'b expression -> 'b expression
+  macro if_ : bool expression -> 'a expression -> 'a expression -> 'a expression
   (*val par : ?*)
   (* if-then-else *)
-  val (:=) : 'a ref expression -> 'a expression -> unit expression
+  macro (:=) : 'a ref expression -> 'a expression -> unit expression
   (*val update_indexable : ?*)
   (* RecordProjection: records not supported yet, using this instead: *)
-  val fst : ('a * _) expression -> 'a expression
-  val snd : (_ * 'b) expression -> 'b expression
+  macro fst : ('a * _) expression -> 'a expression
+  macro snd : (_ * 'b) expression -> 'b expression
   (* Don't know why in motto code the constructor is "Functor_App"; here I will
    * simply name it "fn_apply". *)
-  val apply : ('dom, 'ret) fn -> 'dom expression -> 'ret expression
-  val integer_range : int expression -> int expression
+  macro apply : ('dom, 'ret) fn -> 'dom expression -> 'ret expression
+  macro integer_range : int expression -> int expression
     -> int list expression
   (*val map : ?*)
-  val iterate :
+  macro iterate :
     'a list expression (* List *)
     -> 'b expression (* Initial value *)
     -> ('b expression -> 'a expression -> 'b expression) (* Loop body *)
     -> 'b expression
-  val (<~) : (_, 'a) channel -> 'a expression -> unit expression
-  val (?.) : ('a, _) channel -> 'a expression
-  val (??) : ('a, _) channel -> 'a expression (* Peeking *)
-  val mkstr : string -> string expression
+  macro (<~) : (_, 'a) channel -> 'a expression -> unit expression
+  macro (?.) : ('a, _) channel -> 'a expression
+  macro (??) : ('a, _) channel -> 'a expression (* Peeking *)
+  macro mkstr : string -> string expression
   (*val meta_quoted : ?*)
   (*val hole : ?*)
   (*val literal_expr : ?*)
 
-  val eval : 'a expression -> 'a
+  macro eval : 'a expression -> 'a
 end
