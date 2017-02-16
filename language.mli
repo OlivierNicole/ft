@@ -75,7 +75,7 @@ module type Semantics = sig
   macro (+) : int expression -> int expression -> int expression
   macro (-) : int expression -> int expression -> int expression
   macro ( * ) : int expression -> int expression -> int expression
-  macro mod_ : int expression -> int expression -> int expression
+  macro (mod) : int expression -> int expression -> int expression
   macro (/) : int expression -> int expression -> int expression
   macro abs : int expression -> int expression
   macro mk_ipv4_address : (int * int * int * int) expression

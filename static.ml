@@ -96,7 +96,7 @@ macro (-) x y =
 macro ( * ) x y =
   lift2 ( * ) x y
 
-macro mod_ a b =
+macro (mod) a b =
   lift2 (mod) a b
 
 macro (/) x y =
