@@ -38,8 +38,8 @@ module type Semantics = sig
   macro channel : ('i, 'o) chan_type -> ('i, 'o) channel
   (* Can read from channel? *)
   macro can : (_, _) channel -> bool expression
-  macro put_incoming : ('a, _) channel -> 'a expression -> unit
-  macro put_outgoing : (_, 'a) channel -> 'a expression -> unit
+  macro put_incoming : ('a, _) channel -> 'a expression -> unit expression
+  macro put_outgoing : (_, 'a) channel -> 'a expression -> unit expression
 
   (*
    * Function definitions
@@ -117,6 +117,4 @@ module type Semantics = sig
   (*val meta_quoted : ?*)
   (*val hole : ?*)
   (*val literal_expr : ?*)
-
-  macro eval : 'a expression -> 'a
 end

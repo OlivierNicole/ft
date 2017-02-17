@@ -150,16 +150,15 @@ macro if_ (cond : bool expression) (ift : 'a expression) (iff : 'a expression)
   lazy (
     if force cond then force ift else force iff)
 
+static rec integer_range' (lb : int) (ub : int) : int list =
+  let open ~Pervasives in
+  if ub <= lb then []
+  else pred ub :: integer_range' lb (pred ub)
+
 macro rec integer_range (lb : int expression) (ub : int expression)
     : int list expression =
   lazy (
-    let open ~Pervasives in
-    let ub = force ub in
-    if ub <= force lb then []
-    else
-      let new_ub = pred ub in
-      let xs = integer_range lb (mkint new_ub) in
-      new_ub :: force xs
+    integer_range' (force lb) (force ub)
   )
 
 macro rec iterate (l : 'a list expression) (x : 'b expression) f =

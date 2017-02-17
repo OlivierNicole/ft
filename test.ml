@@ -18,7 +18,6 @@ module Test(Backend : Language.Semantics) = struct
 
 end
 
-module Program = Test(Interp)
+module Program = Test(Dyn)
 
-let () = Printf.printf "%d\n" @@ $(Expr.of_int
-  (Interp.eval (Program.program ())))
+let () = Printf.printf "%d\n" @@ $(Program.program ())
